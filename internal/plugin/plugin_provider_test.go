@@ -9,7 +9,6 @@ import (
 	"github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/signalfx/signalflow-client-go/v2/signalflow"
 	"github.com/signalfx/signalfx-go/idtool"
-	log "github.com/sirupsen/logrus"
 )
 
 func fakeMetric(program, endpoint string, duration int, aggregator, success, failure string) v1alpha1.Metric {
@@ -44,8 +43,8 @@ func TestRunMapsPhases(t *testing.T) {
 
 			// Inject fake client via endpoint - but Run creates its own client via streamURL.
 			// So we need to use streamURL that points to fake backend.
-			metric := fakeMetric(program, fake.URL(), 1, "latest", tc.success, tc.failure)
-			provider := &RpcPlugin{LogCtx: *log.WithField("test", "provider")}
+			metric := fakeMetric(program, fake.URL(), 2, "latest", tc.success, tc.failure)
+			provider := &RpcPlugin{LogCtx: testLogger()}
 			m := provider.Run(nil, metric)
 			if m.Phase != tc.want {
 				t.Fatalf("phase = %q, want %q, message %q value %q", m.Phase, tc.want, m.Message, m.Value)
@@ -61,7 +60,7 @@ func TestRunMapsPhases(t *testing.T) {
 }
 
 func TestRunReturnsErrorOnInvalidConfigAndEmptyData(t *testing.T) {
-	provider := &RpcPlugin{LogCtx: *log.WithField("test", "provider")}
+	provider := &RpcPlugin{LogCtx: testLogger()}
 	invalid := v1alpha1.Metric{Name: "latency"}
 	m := provider.Run(nil, invalid)
 	if m.Phase != v1alpha1.AnalysisPhaseError {
@@ -83,7 +82,7 @@ func TestRunReturnsErrorOnInvalidConfigAndEmptyData(t *testing.T) {
 }
 
 func TestGetMetadata(t *testing.T) {
-	provider := &RpcPlugin{LogCtx: *log.WithField("test", "provider")}
+	provider := &RpcPlugin{LogCtx: testLogger()}
 	raw := json.RawMessage(`{"query":"data('demo').publish()","realm":"us0","accessToken":"secret","duration":60,"aggregator":"avg"}`)
 	metric := v1alpha1.Metric{Provider: v1alpha1.MetricProvider{Plugin: map[string]json.RawMessage{PluginName: raw}}}
 	meta := provider.GetMetadata(metric)
