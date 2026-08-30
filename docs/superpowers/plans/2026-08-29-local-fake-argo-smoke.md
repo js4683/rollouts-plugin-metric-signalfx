@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Strengthen the released SignalFx metric plugin with executable-level RPC coverage, real FakeBackend computation-error coverage, and a disposable kind smoke test that exercises the released binary through an Argo Rollouts `AnalysisRun` without a Splunk account.
+**Goal:** Strengthen the released SignalFx metric plugin with executable-level RPC coverage, protocol-valid SignalFlow computation-error coverage, and a disposable kind smoke test that exercises the released binary through an Argo Rollouts `AnalysisRun` without a Splunk account.
 
 **Architecture:** Keep production behavior and the published v0.1.0 binary unchanged. Use the pinned client library's `FakeBackend` for deterministic data streams and a tiny test-only WebSocket handler for the terminal computation-error protocol case, package the data fake into a temporary Linux image, and let Argo Rollouts download and launch the already published plugin binary. The smoke test uses a fake token and `streamURL`, verifies the observed `42` measurement, checks the controller does not log the token, and deletes its kind cluster on exit. Test log noise is suppressed only in test logger setup.
 

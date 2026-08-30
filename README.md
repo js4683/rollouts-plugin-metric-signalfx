@@ -131,7 +131,7 @@ The example query and thresholds are illustrative. Substitute a SignalFlow progr
 
 ## Testing without Splunk
 
-The automated suite does not contact Splunk Observability Cloud. It uses the SignalFlow client's `FakeBackend` to exercise data collection, aggregation, error propagation, provider phase mapping, and RPC behavior:
+The automated suite does not contact Splunk Observability Cloud. It uses the SignalFlow client's `FakeBackend` to exercise data collection, aggregation, provider phase mapping, and executable RPC behavior. Protocol-valid computation errors are covered by a test-only WebSocket handler, not `FakeBackend`.
 
 ```bash
 go test -race ./...
