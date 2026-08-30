@@ -8,6 +8,7 @@ import (
 
 	"github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/signalfx/signalflow-client-go/v2/signalflow"
+	"github.com/signalfx/signalflow-client-go/v2/signalflow/messages"
 	"github.com/signalfx/signalfx-go/idtool"
 )
 
@@ -39,11 +40,12 @@ func TestRunMapsPhases(t *testing.T) {
 			fake := signalflow.NewRunningFakeBackend()
 			defer fake.Stop()
 			fake.AddProgramTSIDs(program, []idtool.ID{idtool.ID(1)})
+			fake.AddTSIDMetadata(idtool.ID(1), &messages.MetadataProperties{ResolutionMS: 100})
 			fake.SetTSIDFloatData(idtool.ID(1), 42)
 
 			// Inject fake client via endpoint - but Run creates its own client via streamURL.
 			// So we need to use streamURL that points to fake backend.
-			metric := fakeMetric(program, fake.URL(), 2, "latest", tc.success, tc.failure)
+			metric := fakeMetric(program, fake.URL(), 1, "latest", tc.success, tc.failure)
 			provider := &RpcPlugin{LogCtx: testLogger()}
 			m := provider.Run(nil, metric)
 			if m.Phase != tc.want {
