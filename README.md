@@ -2,7 +2,7 @@
 
 An out-of-tree RPC metric provider that evaluates bounded SignalFlow programs against Splunk Observability Cloud (formerly SignalFx).
 
-- **Status:** Planning / initial implementation. Metric plugins are still alpha in Argo Rollouts.
+- **Status:** v0.1.0 initial release. Metric plugins are still alpha in Argo Rollouts.
 - **Compatibility:** Argo Rollouts v1.10.0. Pin the dependency exactly for the first release.
 - **Provider key:** `js4683/rollouts-plugin-metric-signalfx`
 - **Module:** `github.com/js4683/rollouts-plugin-metric-signalfx`
@@ -51,9 +51,10 @@ data:
   metricProviderPlugins: |-
     - name: "js4683/rollouts-plugin-metric-signalfx"
       location: "https://github.com/js4683/rollouts-plugin-metric-signalfx/releases/download/v0.1.0/metric-plugin-linux-amd64"
+      sha256: "cefb4120ee5d29e11ed2fa5efde4389be09e59f990bc14166c447a43e5a40442"
 ```
 
-Add the exact `sha256` checksum published with the release to the entry when a release exists. For unreleased or development use, omit `sha256`.
+For arm64 nodes, use `metric-plugin-linux-arm64` with checksum `70aaff2cbedf61ae5d03074d974776a14b527273cb39dc16b66d522ef064cfaa`. For unreleased or development use, omit `sha256`.
 
 ### File location
 
@@ -127,6 +128,29 @@ spec:
 ```
 
 The example query and thresholds are illustrative. Substitute a SignalFlow program that publishes one result and SLO thresholds that match the service under analysis. The provider key, field names, duration units, and `aggregator` values are part of the contract.
+
+## Testing without Splunk
+
+The automated suite does not contact Splunk Observability Cloud. It uses the SignalFlow client's `FakeBackend` to exercise data collection, aggregation, error propagation, provider phase mapping, and RPC behavior:
+
+```bash
+go test -race ./...
+go vet ./...
+```
+
+`TestBuiltPluginBinaryUsesFakeSignalFlow` also builds the current executable, launches it as a separate go-plugin process, connects it to a fake SignalFlow WebSocket server, and verifies an Argo-compatible measurement of `42`:
+
+```bash
+go test ./... -run TestBuiltPluginBinaryUsesFakeSignalFlow -count=1 -v
+```
+
+For a controller-level smoke test, install Docker, kind, and kubectl, start a local Docker runtime, and run:
+
+```bash
+bash test/kind-smoke.sh
+```
+
+The script builds a test-only fake SignalFlow service, creates the disposable `argo-sfx-smoke` cluster, installs Argo Rollouts v1.10.0, downloads the public v0.1.0 plugin binary with its architecture-specific checksum, injects the fake token through a Kubernetes Secret, and runs a one-shot `AnalysisRun` that must finish `Successful` with value `42`. It deletes the cluster on exit. This validates plugin download, RPC startup, Secret environment propagation, WebSocket connectivity, and Argo wiring; it does not validate live Splunk authentication or metric ingestion.
 
 ## Building and verifying locally
 

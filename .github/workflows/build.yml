@@ -21,7 +21,7 @@ jobs:
       - name: Download dependencies
         run: go mod download
       - name: Check formatting
-        run: test -z "$(gofmt -l main.go rpc_test.go internal/plugin/*.go)"
+        run: test -z "$(gofmt -l main.go rpc_test.go rpc_binary_test.go internal/plugin/*.go test/fake-signalflow/*.go)"
       - name: Test
         run: go test -race ./...
       - name: Vet
