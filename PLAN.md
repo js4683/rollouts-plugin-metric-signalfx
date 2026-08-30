@@ -10,8 +10,6 @@
 
 **Spec:** `../argo-rollouts-signalfx-plugin.md`
 
-No-account RPC, computation-error, and kind smoke coverage: `docs/superpowers/plans/2026-08-29-local-fake-argo-smoke.md`.
-
 ## Global Constraints
 
 - Use module path `github.com/js4683/rollouts-plugin-metric-signalfx`.
