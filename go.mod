@@ -4,6 +4,7 @@ go 1.26.1
 
 require (
 	github.com/argoproj/argo-rollouts v1.10.0
+	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/hashicorp/go-plugin v1.7.0
 	github.com/signalfx/signalflow-client-go/v2 v2.3.0
 	github.com/signalfx/signalfx-go v1.34.0
@@ -24,7 +25,6 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect
 	github.com/hashicorp/go-hclog v1.6.3 // indirect
 	github.com/hashicorp/yamux v0.1.2 // indirect
 	github.com/josharian/intern v1.0.0 // indirect

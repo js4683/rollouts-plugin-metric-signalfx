@@ -1,7 +1,7 @@
 .PHONY: fmt test vet build clean
 
 fmt:
-	gofmt -w main.go rpc_test.go internal/plugin/*.go
+	gofmt -w main.go rpc_test.go rpc_binary_test.go internal/plugin/*.go test/fake-signalflow/*.go
 
 test:
 	go test -race ./...

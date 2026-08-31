@@ -3,12 +3,18 @@ package plugin
 import (
 	"context"
 	"encoding/binary"
+	"encoding/json"
+	"errors"
+	"io"
 	"math"
+	"net/http"
+	"net/http/httptest"
 	"sort"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/signalfx/signalflow-client-go/v2/signalflow"
 	"github.com/signalfx/signalflow-client-go/v2/signalflow/messages"
 	"github.com/signalfx/signalfx-go/idtool"
@@ -100,16 +106,23 @@ func TestCollectSignalFlowReturnsEmptyDataError(t *testing.T) {
 
 func TestCollectSignalFlowReturnsComputationError(t *testing.T) {
 	const program = "data('broken').publish()"
-	client, fake := newFakeClient(t, program, map[idtool.ID]float64{idtool.ID(1): 42})
-	defer closeFakeClient(client, fake)
+	server := newErrorSignalFlowServer()
+	defer server.Close()
 
-	cancelledCtx, cancel := context.WithCancel(context.Background())
-	cancel()
+	client, err := signalflow.NewClient(
+		signalflow.StreamURL(strings.Replace(server.URL, "http://", "ws://", 1)),
+		signalflow.AccessToken("abcd"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
 
-	_, err := collectSignalFlow(cancelledCtx, client, Config{
+	_, err = collectSignalFlow(context.Background(), client, Config{
 		Query: program, Duration: 5, Aggregator: "avg",
 	}, testLogger())
-	if err == nil || !strings.Contains(err.Error(), "could not execute SignalFlow program") {
+	var computationErr *signalflow.ComputationError
+	if err == nil || !errors.As(err, &computationErr) || computationErr.Message != "synthetic SignalFlow failure" {
 		t.Fatalf("error = %v, want execute error", err)
 	}
 }
@@ -160,7 +173,45 @@ func closeFakeClient(client *signalflow.Client, fake *signalflow.FakeBackend) {
 }
 
 func testLogger() log.Entry {
-	return *log.New().WithField("test", "signalflow")
+	logger := log.New()
+	logger.SetOutput(io.Discard)
+	return *logger.WithField("test", "signalflow")
+}
+
+func newErrorSignalFlowServer() *httptest.Server {
+	upgrader := websocket.Upgrader{}
+	return httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		connection, err := upgrader.Upgrade(writer, request, nil)
+		if err != nil {
+			return
+		}
+		defer connection.Close()
+
+		for {
+			_, payload, err := connection.ReadMessage()
+			if err != nil {
+				return
+			}
+			var message struct {
+				Type    string `json:"type"`
+				Channel string `json:"channel"`
+			}
+			if err := json.Unmarshal(payload, &message); err != nil {
+				return
+			}
+			switch message.Type {
+			case "authenticate":
+				_ = connection.WriteJSON(map[string]string{"type": "authenticated"})
+			case "execute":
+				_ = connection.WriteJSON(map[string]string{
+					"type":    "error",
+					"message": "synthetic SignalFlow failure",
+					"channel": message.Channel,
+				})
+				return
+			}
+		}
+	}))
 }
 
 func doublePayload(value float64) messages.DataPayload {
